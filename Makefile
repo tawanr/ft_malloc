@@ -1,5 +1,9 @@
 LIBFT_DIR = libft
 
+ifeq ($(HOSTTYPE),)
+HOSTTYPE := $(shell uname -m)_$(shell uname -s)
+endif
+
 SRCS = ft_malloc.c
 
 SRC_DIR = srcs/
@@ -9,7 +13,8 @@ OBJ_DIR = objs/
 CC = gcc -Ilibft
 CFLAGS = -Wextra -Wall -Werror -Ilibft
 
-NAME = libft_malloc.so
+NAME = libft_malloc_$(HOSTTYPE).so
+SYMLINK = libft_malloc.so
 INCLUDES = -Ilibft -Iincludes
 
 LIBS = -L$(LIBFT_DIR) -lft
@@ -23,6 +28,7 @@ all: $(NAME)
 $(NAME): $(addprefix $(OBJ_DIR), $(OBJS))
 	$(MAKE) -C ./libft
 	$(CC) $(addprefix $(OBJ_DIR), $(OBJS)) $(INCLUDES) $(LIBS) -shared -o $(NAME)
+	ln -sf $(NAME) $(SYMLINK)
 
 test: all
 	$(CC) main.c -L. -lft_malloc -Iincludes -Ilibft -o main_test

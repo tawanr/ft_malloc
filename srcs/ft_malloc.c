@@ -1,29 +1,7 @@
 #include "ft_malloc.h"
 
-typedef struct MemoryNode
-{
-    struct MemoryNode *next;
-    struct MemoryNode *prev;
-    void *loc;
-    size_t size;
-    int is_free;
-} MemoryNode;
-
-typedef struct BlockLimits
-{
-    size_t max_size;
-    size_t resolution;
-    size_t block_size;
-} BlockLimits;
-
-typedef struct MemoryBlocks
-{
-    MemoryNode *tiny_head;
-    MemoryNode *small_head;
-    MemoryNode *large_head;
-} MemoryBlocks;
-
 MemoryBlocks blocks = {NULL, NULL, NULL};
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 MemoryNode *allocate_new_block(MemoryNode **head, size_t block_size)
 {
@@ -207,12 +185,10 @@ void check_head_free(MemoryNode *block)
     }
 }
 
-void ft_free(void *ptr)
+void free_block(MemoryNode *block)
 {
-    MemoryNode *block = get_block(ptr);
     MemoryNode *temp = NULL;
-    if (block == NULL)
-        return;
+
     block->is_free = 1;
     if ((block->next != NULL) && (block->next->is_free == 1))
     {
@@ -235,20 +211,36 @@ void ft_free(void *ptr)
         check_head_free(block);
 }
 
+void ft_free(void *ptr)
+{
+    pthread_mutex_lock(&lock);
+    MemoryNode *block = get_block(ptr);
+    if (block == NULL)
+        return;
+    free_block(block);
+    pthread_mutex_unlock(&lock);
+}
+
 void *ft_malloc(size_t size)
 {
     MemoryNode *allocated = NULL;
 
+    pthread_mutex_lock(&lock);
     allocated = allocate_zone(size);
+    pthread_mutex_unlock(&lock);
 
     return allocated->loc;
 }
 
 void *ft_realloc(void *ptr, size_t size)
 {
+    pthread_mutex_lock(&lock);
     MemoryNode *block = get_block(ptr);
     if (block == NULL)
+    {
+        pthread_mutex_unlock(&lock);
         return NULL;
+    }
     size_t prev_size;
     if (size < block->size)
     {
@@ -257,6 +249,7 @@ void *ft_realloc(void *ptr, size_t size)
         if (block->next != NULL && block->next->is_free == 1)
         {
             block->next->size += block->size;
+            pthread_mutex_unlock(&lock);
             return block->loc;
         }
         MemoryNode *new_block = mmap(NULL, sizeof(MemoryNode), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
@@ -265,12 +258,17 @@ void *ft_realloc(void *ptr, size_t size)
         new_block->prev = block;
         new_block->next = block->next;
         new_block->loc = block->loc + block->size;
+        pthread_mutex_unlock(&lock);
         return new_block;
     }
     MemoryNode *allocated = allocate_zone(size);
     if (allocated == NULL)
+    {
+        pthread_mutex_unlock(&lock);
         return NULL;
+    }
     ft_strlcpy(allocated->loc, block->loc, block->size);
-    ft_free(ptr);
+    free_block(block);
+    pthread_mutex_unlock(&lock);
     return allocated->loc;
 }

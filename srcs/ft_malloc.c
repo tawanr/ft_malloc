@@ -51,10 +51,28 @@ MemoryNode *allocate_new_block(MemoryNode **head, size_t block_size)
     return new_block;
 }
 
-void *allocate_zone(size_t size, MemoryNode **head, size_t resolution, size_t block_size)
+void get_block_limit(size_t size, size_t *resolution, size_t *block_size)
+{
+    const size_t TINY_MAX = 992;
+    const size_t TINY_SIZE = 2 * 1024 * 1024;
+    const size_t TINY_RESOLUTION = 16;
+
+    if (size <= TINY_MAX)
+    {
+        *resolution = TINY_RESOLUTION;
+        *block_size = TINY_SIZE;
+    }
+}
+
+void *allocate_zone(size_t size, MemoryNode **head)
 {
     MemoryNode *cur = *head;
     MemoryNode *rtn = NULL;
+    size_t resolution = 0;
+    size_t block_size = 0;
+
+    get_block_limit(size, &resolution, &block_size);
+
     if (size < resolution)
         size = resolution;
     if (size > block_size)
@@ -88,7 +106,7 @@ void *allocate_zone(size_t size, MemoryNode **head, size_t resolution, size_t bl
     {
         if (allocate_new_block(head, block_size) == NULL)
             return rtn;
-        rtn = allocate_zone(size, head, resolution, block_size);
+        rtn = allocate_zone(size, head);
     }
     return rtn;
 }
@@ -199,15 +217,9 @@ void ft_free(void *ptr)
 
 void *ft_malloc(size_t size)
 {
-    const size_t TINY_MAX = 992;
-    const size_t TINY_SIZE = 2 * 1024 * 1024;
-    const size_t TINY_RESOLUTION = 16;
-
     MemoryNode *allocated = NULL;
 
-    if (size > TINY_MAX)
-        return NULL;
-    allocated = allocate_zone(size, &(blocks.tiny_head), TINY_RESOLUTION, TINY_SIZE);
+    allocated = allocate_zone(size, &(blocks.tiny_head));
 
     return allocated->loc;
 }

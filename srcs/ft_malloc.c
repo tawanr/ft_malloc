@@ -51,27 +51,47 @@ MemoryNode *allocate_new_block(MemoryNode **head, size_t block_size)
     return new_block;
 }
 
-void get_block_limit(size_t size, size_t *resolution, size_t *block_size)
+void get_block_limit(size_t size, MemoryNode ***head, size_t *resolution, size_t *block_size)
 {
     const size_t TINY_MAX = 992;
     const size_t TINY_SIZE = 2 * 1024 * 1024;
     const size_t TINY_RESOLUTION = 16;
 
+    const size_t SMALL_MAX = 127 * 1024;
+    const size_t SMALL_SIZE = 16 * 1024 * 1024;
+    const size_t SMALL_RESOLUTION = 512;
+
+    const size_t LARGE_RESOLUTION = 4 * 1024;
+
     if (size <= TINY_MAX)
     {
         *resolution = TINY_RESOLUTION;
         *block_size = TINY_SIZE;
+        *head = &(blocks.tiny_head);
+    }
+    else if (size < SMALL_MAX)
+    {
+        *resolution = SMALL_RESOLUTION;
+        *block_size = SMALL_SIZE;
+        *head = &(blocks.small_head);
+    }
+    else
+    {
+        *resolution = LARGE_RESOLUTION;
+        *head = &(blocks.large_head);
     }
 }
 
-void *allocate_zone(size_t size, MemoryNode **head)
+void *allocate_zone(size_t size)
 {
-    MemoryNode *cur = *head;
+    MemoryNode **head = NULL;
     MemoryNode *rtn = NULL;
     size_t resolution = 0;
     size_t block_size = 0;
 
-    get_block_limit(size, &resolution, &block_size);
+    get_block_limit(size, &head, &resolution, &block_size);
+
+    MemoryNode *cur = *head;
 
     if (size < resolution)
         size = resolution;
@@ -106,7 +126,7 @@ void *allocate_zone(size_t size, MemoryNode **head)
     {
         if (allocate_new_block(head, block_size) == NULL)
             return rtn;
-        rtn = allocate_zone(size, head);
+        rtn = allocate_zone(size);
     }
     return rtn;
 }
@@ -219,7 +239,38 @@ void *ft_malloc(size_t size)
 {
     MemoryNode *allocated = NULL;
 
-    allocated = allocate_zone(size, &(blocks.tiny_head));
+    allocated = allocate_zone(size);
 
+    return allocated->loc;
+}
+
+void *ft_realloc(void *ptr, size_t size)
+{
+    MemoryNode *block = get_block(ptr);
+    if (block == NULL)
+        return NULL;
+    size_t prev_size;
+    if (size < block->size)
+    {
+        prev_size = block->size;
+        block->size = size;
+        if (block->next != NULL && block->next->is_free == 1)
+        {
+            block->next->size += block->size;
+            return block->loc;
+        }
+        MemoryNode *new_block = mmap(NULL, sizeof(MemoryNode), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+        new_block->size = prev_size - size;
+        new_block->is_free = 1;
+        new_block->prev = block;
+        new_block->next = block->next;
+        new_block->loc = block->loc + block->size;
+        return new_block;
+    }
+    MemoryNode *allocated = allocate_zone(size);
+    if (allocated == NULL)
+        return NULL;
+    ft_strlcpy(allocated->loc, block->loc, block->size);
+    ft_free(ptr);
     return allocated->loc;
 }

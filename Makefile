@@ -24,8 +24,9 @@ $(NAME): $(addprefix $(OBJ_DIR), $(OBJS))
 	$(MAKE) -C ./libft
 	$(CC) $(addprefix $(OBJ_DIR), $(OBJS)) $(INCLUDES) $(LIBS) -shared -o $(NAME)
 
-test:
-	$(CC) main.c -L. -lft_malloc -o main_test
+test: all
+	$(CC) main.c -L. -lft_malloc -Iincludes -o main_test
+	./main_test
 
 clean:
 	$(MAKE) clean -C ./libft

@@ -2,7 +2,10 @@
 #define __FT_MALLOC__
 
 #include <stdio.h>
+#include <sys/mman.h>
 
-int ft_malloc();
+void show_malloc();
+void *ft_malloc(size_t size);
+void ft_free(void *ptr);
 
 #endif

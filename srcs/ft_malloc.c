@@ -1,5 +1,4 @@
 #include "ft_malloc.h"
-#include <stdlib.h>
 
 typedef struct MemoryNode
 {
@@ -10,6 +9,13 @@ typedef struct MemoryNode
     int is_free;
 } MemoryNode;
 
+typedef struct BlockLimits
+{
+    size_t max_size;
+    size_t resolution;
+    size_t block_size;
+} BlockLimits;
+
 typedef struct MemoryBlocks
 {
     MemoryNode *tiny_head;
@@ -19,12 +25,40 @@ typedef struct MemoryBlocks
 
 MemoryBlocks blocks = {NULL, NULL, NULL};
 
-void *allocate_zone(size_t size, MemoryNode **head, size_t resolution)
+MemoryNode *allocate_new_block(MemoryNode **head, size_t block_size)
+{
+    MemoryNode *cur = *head;
+    MemoryNode *new_block = mmap(NULL, sizeof(MemoryNode), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+    if (new_block == NULL)
+        return NULL;
+    new_block->loc = mmap(NULL, block_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+    if (new_block->loc == NULL)
+        return NULL;
+
+    new_block->is_free = 1;
+    new_block->size = block_size;
+    new_block->next = NULL;
+    new_block->prev = NULL;
+    if (cur == NULL)
+    {
+        *head = new_block;
+        return new_block;
+    }
+    while (cur->next != NULL)
+        cur = cur->next;
+    cur->next = new_block;
+    new_block->prev = cur;
+    return new_block;
+}
+
+void *allocate_zone(size_t size, MemoryNode **head, size_t resolution, size_t block_size)
 {
     MemoryNode *cur = *head;
     MemoryNode *rtn = NULL;
     if (size < resolution)
         size = resolution;
+    if (size > block_size)
+        block_size = size;
     while (cur != NULL)
     {
         if ((cur->is_free == 0) || (cur->size < size))
@@ -50,6 +84,12 @@ void *allocate_zone(size_t size, MemoryNode **head, size_t resolution)
             *head = rtn;
         return rtn;
     }
+    if (rtn == NULL)
+    {
+        if (allocate_new_block(head, block_size) == NULL)
+            return rtn;
+        rtn = allocate_zone(size, head, resolution, block_size);
+    }
     return rtn;
 }
 
@@ -65,15 +105,67 @@ MemoryNode *get_block(void *loc)
     return NULL;
 }
 
-void show_malloc()
+void show_alloc_mem()
 {
+    size_t total = 0;
+
     MemoryNode *cur = blocks.tiny_head;
-    if (cur == NULL)
-        printf("Block is empty\n");
+    ft_printf("TINY : 0x%X\n", cur);
     while (cur != NULL)
     {
-        printf("size: %lu free: %d\n", cur->size, cur->is_free);
+        if (cur->is_free == 0)
+        {
+            ft_printf("0x%X - 0x%X : %u bytes\n", cur->loc, cur->loc + cur->size, cur->size);
+            total += cur->size;
+        }
         cur = cur->next;
+    }
+
+    cur = blocks.small_head;
+    ft_printf("SMALL : 0x%X\n", cur);
+    while (cur != NULL)
+    {
+        if (cur->is_free == 0)
+        {
+            ft_printf("0x%X - 0x%X : %u bytes\n", cur->loc, cur->loc + cur->size, cur->size);
+            total += cur->size;
+        }
+        cur = cur->next;
+    }
+
+    cur = blocks.large_head;
+    ft_printf("LARGE : 0x%X\n", cur);
+    while (cur != NULL)
+    {
+        if (cur->is_free == 0)
+        {
+            ft_printf("0x%X - 0x%X : %u bytes\n", cur->loc, cur->loc + cur->size, cur->size);
+            total += cur->size;
+        }
+        cur = cur->next;
+    }
+    ft_printf("Total : %u bytes\n", total);
+}
+
+void check_head_free(MemoryNode *block)
+{
+    if (blocks.tiny_head == block)
+    {
+        munmap(block->loc, block->size);
+        munmap(block, sizeof(MemoryNode));
+        blocks.tiny_head = NULL;
+    }
+    else if (blocks.small_head == block)
+    {
+        munmap(block->loc, block->size);
+        munmap(block, sizeof(MemoryNode));
+        blocks.small_head = NULL;
+    }
+    else if (blocks.large_head == block)
+    {
+        munmap(block->loc, block->size);
+        munmap(block, sizeof(MemoryNode));
+        blocks.large_head = NULL;
     }
 }
 
@@ -102,14 +194,7 @@ void ft_free(void *ptr)
         munmap(temp, sizeof(MemoryNode));
     }
     if (block->prev == NULL && block->next == NULL)
-    {
-        if (blocks.tiny_head == block)
-        {
-            munmap(block->loc, block->size);
-            munmap(block, sizeof(MemoryNode));
-            blocks.tiny_head = NULL;
-        }
-    }
+        check_head_free(block);
 }
 
 void *ft_malloc(size_t size)
@@ -121,31 +206,8 @@ void *ft_malloc(size_t size)
     MemoryNode *allocated = NULL;
 
     if (size > TINY_MAX)
-    {
         return NULL;
-    }
-    if (blocks.tiny_head == NULL)
-    {
-        MemoryNode *ptr = mmap(NULL, sizeof(MemoryNode), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
-        if (ptr == NULL)
-        {
-            printf("Cannot allocate\n");
-        }
-        ptr->loc = mmap(NULL, TINY_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
-        if (ptr->loc == NULL)
-        {
-            printf("Cannot allocate\n");
-        }
-        ptr->next = NULL;
-        ptr->prev = NULL;
-        ptr->size = TINY_SIZE;
-        ptr->is_free = 1;
-        blocks.tiny_head = ptr;
-    }
-    allocated = allocate_zone(size, &(blocks.tiny_head), TINY_RESOLUTION);
-
-    if (allocated == NULL)
-        return NULL;
+    allocated = allocate_zone(size, &(blocks.tiny_head), TINY_RESOLUTION, TINY_SIZE);
 
     return allocated->loc;
 }

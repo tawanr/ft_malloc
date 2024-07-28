@@ -25,7 +25,7 @@ $(NAME): $(addprefix $(OBJ_DIR), $(OBJS))
 	$(CC) $(addprefix $(OBJ_DIR), $(OBJS)) $(INCLUDES) $(LIBS) -shared -o $(NAME)
 
 test: all
-	$(CC) main.c -L. -lft_malloc -Iincludes -o main_test
+	$(CC) main.c -L. -lft_malloc -Iincludes -Ilibft -o main_test
 	./main_test
 
 clean:

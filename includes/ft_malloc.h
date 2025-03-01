@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   ft_malloc.h                                        :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: tratanat <tawan.rtn@gmail.com>             +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/03/01 14:18:00 by tratanat          #+#    #+#             */
+/*   Updated: 2025/03/01 14:28:13 by tratanat         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef __FT_MALLOC__
 #define __FT_MALLOC__
 
@@ -34,8 +46,6 @@ void show_alloc_mem();
 void *ft_malloc(size_t size);
 void ft_free(void *ptr);
 void *ft_realloc(void *ptr, size_t size);
-
-MemoryBlocks blocks = {NULL, NULL, NULL};
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+void *allocate_zone(size_t size);
 
 #endif

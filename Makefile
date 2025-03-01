@@ -4,7 +4,7 @@ ifeq ($(HOSTTYPE),)
 HOSTTYPE := $(shell uname -m)_$(shell uname -s)
 endif
 
-SRCS = ft_malloc.c
+SRCS = mem_blocks.c show_alloc_mem.c ft_malloc.c ft_free.c ft_realloc.c
 
 SRC_DIR = srcs/
 OBJS = $(SRCS:.c=.o)

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <sys/mman.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "libft.h"
 
 typedef struct MemoryNode
@@ -33,5 +34,8 @@ void show_alloc_mem();
 void *ft_malloc(size_t size);
 void ft_free(void *ptr);
 void *ft_realloc(void *ptr, size_t size);
+
+MemoryBlocks blocks = {NULL, NULL, NULL};
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 #endif

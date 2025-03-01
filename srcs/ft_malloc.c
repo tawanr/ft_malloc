@@ -1,16 +1,13 @@
 #include "ft_malloc.h"
 
-MemoryBlocks blocks = {NULL, NULL, NULL};
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-
 MemoryNode *allocate_new_block(MemoryNode **head, size_t block_size)
 {
     MemoryNode *cur = *head;
     MemoryNode *new_block = mmap(NULL, sizeof(MemoryNode), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
-    if (new_block == NULL)
+    if (new_block == NULL || new_block == MAP_FAILED)
         return NULL;
     new_block->loc = mmap(NULL, block_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
-    if (new_block->loc == NULL)
+    if (new_block->loc == NULL || new_block == MAP_FAILED)
         return NULL;
 
     new_block->is_free = 1;
@@ -31,15 +28,17 @@ MemoryNode *allocate_new_block(MemoryNode **head, size_t block_size)
 
 void get_block_limit(size_t size, MemoryNode ***head, size_t *resolution, size_t *block_size)
 {
-    const size_t TINY_MAX = 992;
-    const size_t TINY_SIZE = 2 * 1024 * 1024;
-    const size_t TINY_RESOLUTION = 16;
+    const size_t PAGE_SIZE = (size_t)(getpagesize());
 
-    const size_t SMALL_MAX = 127 * 1024;
-    const size_t SMALL_SIZE = 16 * 1024 * 1024;
-    const size_t SMALL_RESOLUTION = 512;
+    const size_t TINY_RESOLUTION = PAGE_SIZE / 256;
+    const size_t TINY_MAX = 64 * TINY_RESOLUTION;
+    const size_t TINY_SIZE = 128 * PAGE_SIZE;
 
-    const size_t LARGE_RESOLUTION = 4 * 1024;
+    const size_t SMALL_RESOLUTION = PAGE_SIZE / 8;
+    const size_t SMALL_MAX = 256 * SMALL_RESOLUTION;
+    const size_t SMALL_SIZE = 512 * PAGE_SIZE;
+
+    const size_t LARGE_RESOLUTION = PAGE_SIZE;
 
     if (size <= TINY_MAX)
     {
@@ -83,6 +82,8 @@ void *allocate_zone(size_t size)
             continue;
         }
         rtn = mmap(NULL, sizeof(MemoryNode), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+        if (rtn == NULL || rtn == MAP_FAILED)
+            return NULL;
         rtn->loc = cur->loc;
         rtn->size = size;
         rtn->is_free = 0;
@@ -112,6 +113,20 @@ void *allocate_zone(size_t size)
 MemoryNode *get_block(void *loc)
 {
     MemoryNode *cur = blocks.tiny_head;
+    while (cur != NULL)
+    {
+        if (cur->loc == loc)
+            return cur;
+        cur = cur->next;
+    }
+    cur = blocks.small_head;
+    while (cur != NULL)
+    {
+        if (cur->loc == loc)
+            return cur;
+        cur = cur->next;
+    }
+    cur = blocks.large_head;
     while (cur != NULL)
     {
         if (cur->loc == loc)
@@ -253,6 +268,8 @@ void *ft_realloc(void *ptr, size_t size)
             return block->loc;
         }
         MemoryNode *new_block = mmap(NULL, sizeof(MemoryNode), PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+        if (new_block == NULL || new_block == MAP_FAILED)
+            return NULL;
         new_block->size = prev_size - size;
         new_block->is_free = 1;
         new_block->prev = block;

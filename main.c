@@ -10,14 +10,17 @@ int main()
     printf("mem2: %s len: %lu\n", mem2, ft_strlen(mem2));
     printf("mem: %p mem2: %p\n", mem, mem2);
     show_alloc_mem();
-    void *small = ft_malloc(1024);
+    void *tiny = ft_malloc(1024);
+    void *small = ft_malloc(2048);
     void *big = ft_malloc(512000);
     show_alloc_mem();
     // void *mem2 = ft_malloc(10);
     // show_alloc_mem();
     // ft_free(mem);
     // show_alloc_mem();
-    // ft_free(mem2);
-    // show_alloc_mem();
+    ft_free(mem2);
+    show_alloc_mem();
+    ft_free(small);
+    show_alloc_mem();
     return 0;
 }

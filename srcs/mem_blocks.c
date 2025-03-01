@@ -6,7 +6,7 @@
 /*   By: tratanat <tawan.rtn@gmail.com>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/01 13:53:31 by tratanat          #+#    #+#             */
-/*   Updated: 2025/03/01 14:28:40 by tratanat         ###   ########.fr       */
+/*   Updated: 2025/03/01 14:56:57 by tratanat         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,6 +68,7 @@ void get_block_limit(size_t size, MemoryNode ***head, size_t *resolution, size_t
     else
     {
         *resolution = LARGE_RESOLUTION;
+        *block_size = size;
         *head = &(blocks.large_head);
     }
 }
@@ -120,9 +121,10 @@ void check_head_free(MemoryNode *block)
     }
 }
 
-void free_block(MemoryNode *block)
+int free_block(MemoryNode *block)
 {
     MemoryNode *temp = NULL;
+    int rtn = 0;
 
     block->is_free = 1;
     if ((block->next != NULL) && (block->next->is_free == 1))
@@ -130,7 +132,9 @@ void free_block(MemoryNode *block)
         temp = block->next;
         block->size += block->next->size;
         block->next = block->next->next;
-        munmap(temp, sizeof(MemoryNode));
+        rtn = munmap(temp, sizeof(MemoryNode));
+        if (rtn < 0)
+            return -1;
     }
     if ((block->prev != NULL) && (block->prev->is_free == 1))
     {
@@ -140,8 +144,11 @@ void free_block(MemoryNode *block)
             block->next->prev = block->prev;
         temp = block;
         block = block->prev;
-        munmap(temp, sizeof(MemoryNode));
+        rtn = munmap(temp, sizeof(MemoryNode));
+        if (rtn < 0)
+            return -1;
     }
     if (block->prev == NULL && block->next == NULL)
         check_head_free(block);
+    return rtn;
 }

@@ -18,8 +18,8 @@ void *allocate_zone(size_t size)
 
     if (size < resolution)
         size = resolution;
-    if (size > block_size)
-        block_size = size;
+    if (size > resolution && size % resolution != 0)
+        size = size + ((resolution - (size % resolution)));
     while (cur != NULL)
     {
         if ((cur->is_free == 0) || (cur->size < size))

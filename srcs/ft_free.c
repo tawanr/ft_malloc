@@ -11,11 +11,10 @@
 /* ************************************************************************** */
 
 #include "ft_malloc.h"
-#include "mem_blocks.h"
 #include "global_mem.h"
+#include "mem_blocks.h"
 
-void ft_free(void *ptr)
-{
+void ft_free(void *ptr) {
     if (ptr == NULL)
         return;
     pthread_mutex_lock(&lock);

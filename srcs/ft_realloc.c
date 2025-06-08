@@ -11,24 +11,20 @@
 /* ************************************************************************** */
 
 #include "ft_malloc.h"
-#include "mem_blocks.h"
 #include "global_mem.h"
+#include "mem_blocks.h"
 
-void *ft_realloc(void *ptr, size_t size)
-{
+void *ft_realloc(void *ptr, size_t size) {
     pthread_mutex_lock(&lock);
     MemoryNode *block = get_block(ptr);
-    if (block == NULL)
-    {
+    if (block == NULL) {
         pthread_mutex_unlock(&lock);
         return NULL;
     }
     MemoryNode *allocated = NULL;
-    if (size > 0)
-    {
+    if (size > 0) {
         allocated = allocate_zone(size);
-        if (allocated == NULL)
-        {
+        if (allocated == NULL) {
             pthread_mutex_unlock(&lock);
             return NULL;
         }

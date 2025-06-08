@@ -32,15 +32,21 @@ $(NAME): $(addprefix $(OBJ_DIR), $(OBJS))
 
 test: all
 	$(CC) main.c -L. -lft_malloc -Iincludes -Ilibft -o main_test
-	./main_test
+	export LD_LIBRARY_PATH=. && ./main_test
+
+test_malloc: all
+	$(CC) test_malloc.c -L. -lft_malloc -Iincludes -Ilibft -o test_malloc
+	export LD_LIBRARY_PATH=. && ./test_malloc
 
 clean:
 	$(MAKE) clean -C ./libft
 	rm -rf $(addprefix $(OBJ_DIR), $(OBJS))
-	rm -rf main_test
+	rm -rf main_test test_malloc
 
 fclean: clean
 	$(MAKE) fclean -C ./libft
 	rm -rf $(NAME)
 
 re: fclean all
+
+.PHONY: all test test_malloc clean fclean re

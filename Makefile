@@ -53,7 +53,7 @@ clean:
 
 fclean: clean
 	$(MAKE) fclean -C ./libft
-	rm -rf $(NAME)
+	rm -rf $(NAME) $(SYMLINK)
 
 re: fclean all
 

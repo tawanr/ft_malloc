@@ -53,3 +53,4 @@ dkms.conf
 
 settings.json
 main_test
+.clang*

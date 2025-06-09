@@ -1,5 +1,6 @@
 #include "ft_malloc.h"
 #include <assert.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <pthread.h>
 #include <stdint.h>
@@ -303,6 +304,37 @@ void test_thread_leaks() {
     print_test_result("Thread memory leak check", 1);
 }
 
+void test_memory_alignment() {
+    print_test_header("Memory Alignment Test");
+
+    const size_t sizes[] = {1,   8,   10,  16,  32,   64,
+                            128, 130, 256, 512, 1024, 2048};
+    const size_t ALIGNMENT = 8;
+
+    for (size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++) {
+        void *ptr = ft_malloc(sizes[i]);
+        if (!ptr) {
+            printf("Allocation failed for size %zu\n", sizes[i]);
+            print_test_result("Memory allocation", 0);
+            return;
+        }
+
+        uintptr_t addr = (uintptr_t)ptr;
+        if (addr % ALIGNMENT != 0) {
+            printf(
+                "Memory not aligned to %zu bytes for size %zu (address: %p)\n",
+                ALIGNMENT, sizes[i], ptr);
+            ft_free(ptr);
+            print_test_result("Memory alignment", 0);
+            return;
+        }
+
+        ft_free(ptr);
+    }
+
+    print_test_result("Memory alignment check", 1);
+}
+
 int main() {
     printf("Starting malloc test suite...\n");
 
@@ -317,6 +349,7 @@ int main() {
     test_nested_allocation_leaks();
     test_realloc_leaks();
     test_thread_leaks();
+    test_memory_alignment();
 
     printf("\nAll tests completed!\n");
     return 0;

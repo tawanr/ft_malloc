@@ -30,13 +30,21 @@ $(NAME): $(addprefix $(OBJ_DIR), $(OBJS))
 	$(CC) $(addprefix $(OBJ_DIR), $(OBJS)) $(INCLUDES) $(LIBS) -shared -o $(NAME)
 	ln -sf $(NAME) $(SYMLINK)
 
-test: all
-	$(CC) main.c -L. -lft_malloc -Iincludes -Ilibft -o main_test
-	export LD_LIBRARY_PATH=. && ./main_test
+show: all
+	@if [ -f main.c ]; then \
+		$(CC) main.c -L. -lft_malloc -Iincludes -Ilibft -o main_test; \
+		export LD_LIBRARY_PATH=. && ./main_test; \
+	else \
+		echo "main.c not found"; \
+	fi
 
-test_malloc: all
-	$(CC) test_malloc.c -L. -lft_malloc -Iincludes -Ilibft -o test_malloc
-	export LD_LIBRARY_PATH=. && ./test_malloc
+test: all
+	@if [ -f test_malloc.c ]; then \
+		$(CC) test_malloc.c -L. -lft_malloc -Iincludes -Ilibft -o test_malloc; \
+		export LD_LIBRARY_PATH=. && ./test_malloc; \
+	else \
+		echo "test_malloc.c not found"; \
+	fi
 
 clean:
 	$(MAKE) clean -C ./libft
@@ -49,4 +57,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all test test_malloc clean fclean re
+.PHONY: all test test_malloc clean fclean re show

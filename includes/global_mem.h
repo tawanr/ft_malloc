@@ -6,14 +6,14 @@
 /*   By: tratanat <tawan.rtn@gmail.com>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/01 14:34:17 by tratanat          #+#    #+#             */
-/*   Updated: 2025/03/01 14:34:18 by tratanat         ###   ########.fr       */
+/*   Updated: 2025/06/21 19:10:27 by tratanat         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef __GLOBAL_MEM__
 #define __GLOBAL_MEM__
 
-#include "ft_malloc.h"
+#include "malloc.h"
 
 extern MemoryBlocks blocks;
 extern pthread_mutex_t lock;

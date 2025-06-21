@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_malloc.h                                        :+:      :+:    :+:   */
+/*   malloc.h                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: tratanat <tawan.rtn@gmail.com>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/01 14:18:00 by tratanat          #+#    #+#             */
-/*   Updated: 2025/03/01 14:28:13 by tratanat         ###   ########.fr       */
+/*   Updated: 2025/06/21 19:13:58 by tratanat         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 #include <sys/mman.h>
 #include <pthread.h>
 #include <unistd.h>
-#include "libft.h"
+#include "../libft/libft.h"
 
 typedef struct MemoryNode
 {
@@ -43,9 +43,9 @@ typedef struct MemoryBlocks
 } MemoryBlocks;
 
 void show_alloc_mem();
-void *ft_malloc(size_t size);
-void ft_free(void *ptr);
-void *ft_realloc(void *ptr, size_t size);
+void *malloc(size_t size);
+void free(void *ptr);
+void *realloc(void *ptr, size_t size);
 void *allocate_zone(size_t size);
 
 #endif

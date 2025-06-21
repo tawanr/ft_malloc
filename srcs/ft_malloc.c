@@ -1,4 +1,4 @@
-#include "ft_malloc.h"
+#include "malloc.h"
 #include "global_mem.h"
 #include "mem_blocks.h"
 #include <stdint.h>
@@ -6,7 +6,8 @@
 MemoryBlocks blocks = {NULL, NULL, NULL};
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
-void *allocate_zone(size_t size) {
+void *allocate_zone(size_t size)
+{
     MemoryNode **head = NULL;
     MemoryNode *rtn = NULL;
     size_t resolution = 0;
@@ -20,8 +21,10 @@ void *allocate_zone(size_t size) {
         size = resolution;
     if (size > resolution && size % resolution != 0)
         size = size + ((resolution - (size % resolution)));
-    while (cur != NULL) {
-        if ((cur->is_free == 0) || (cur->size < size)) {
+    while (cur != NULL)
+    {
+        if ((cur->is_free == 0) || (cur->size < size))
+        {
             cur = cur->next;
             continue;
         }
@@ -46,7 +49,8 @@ void *allocate_zone(size_t size) {
             *head = rtn;
         return rtn;
     }
-    if (rtn == NULL) {
+    if (rtn == NULL)
+    {
         if (allocate_new_block(head, block_size) == NULL)
             return rtn;
         rtn = allocate_zone(size);
@@ -54,7 +58,8 @@ void *allocate_zone(size_t size) {
     return rtn;
 }
 
-void *ft_malloc(size_t size) {
+void *malloc(size_t size)
+{
     if (size == 0 || size > SIZE_MAX - sizeof(void *))
         return NULL;
 

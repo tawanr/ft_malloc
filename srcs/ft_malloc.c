@@ -3,8 +3,15 @@
 #include "mem_blocks.h"
 #include <stdint.h>
 
-MemoryBlocks blocks = {NULL, NULL, NULL};
+MemoryBlocks blocks = {NULL, NULL, NULL, NULL};
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+static NodePool *get_node_pool()
+{
+    if (blocks.node_pool == NULL)
+        blocks.node_pool = init_node_pool(NODE_POOL_SIZE);
+    return blocks.node_pool;
+}
 
 void *allocate_zone(size_t size)
 {
@@ -28,9 +35,8 @@ void *allocate_zone(size_t size)
             cur = cur->next;
             continue;
         }
-        rtn = mmap(NULL, sizeof(MemoryNode), PROT_READ | PROT_WRITE,
-                   MAP_PRIVATE | MAP_ANON, -1, 0);
-        if (rtn == NULL || rtn == MAP_FAILED)
+        rtn = get_node_from_pool(get_node_pool());
+        if (rtn == NULL)
             return NULL;
         rtn->loc = cur->loc;
         rtn->size = size;

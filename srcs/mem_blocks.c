@@ -6,7 +6,7 @@
 /*   By: tratanat <tawan.rtn@gmail.com>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/01 13:53:31 by tratanat          #+#    #+#             */
-/*   Updated: 2025/06/21 19:10:03 by tratanat         ###   ########.fr       */
+/*   Updated: 2025/06/21 22:53:38 by tratanat         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,16 +16,22 @@
 MemoryNode *allocate_new_block(MemoryNode **head, size_t block_size)
 {
     MemoryNode *cur = *head;
-    MemoryNode *new_block =
-        mmap(NULL, sizeof(MemoryNode), PROT_READ | PROT_WRITE,
-             MAP_PRIVATE | MAP_ANON, -1, 0);
-    if (new_block == NULL || new_block == MAP_FAILED)
+
+    if (blocks.node_pool == NULL)
+    {
+        blocks.node_pool = init_node_pool(NODE_POOL_SIZE);
+        if (blocks.node_pool == NULL)
+            return NULL;
+    }
+
+    MemoryNode *new_block = get_node_from_pool(blocks.node_pool);
+    if (new_block == NULL)
         return NULL;
     new_block->loc = mmap(NULL, block_size, PROT_READ | PROT_WRITE,
                           MAP_PRIVATE | MAP_ANON, -1, 0);
-    if (new_block->loc == NULL || new_block == MAP_FAILED)
+    if (new_block->loc == NULL || new_block->loc == MAP_FAILED)
     {
-        munmap(new_block, sizeof(MemoryNode));
+        return_node_to_pool(blocks.node_pool, new_block);
         return NULL;
     }
 
@@ -52,11 +58,11 @@ void get_block_limit(size_t size, MemoryNode ***head, size_t *resolution,
 
     const size_t TINY_RESOLUTION = PAGE_SIZE / 256;
     const size_t TINY_MAX = 64 * TINY_RESOLUTION;
-    const size_t TINY_SIZE = 128 * PAGE_SIZE;
+    const size_t TINY_SIZE = 16 * PAGE_SIZE;
 
     const size_t SMALL_RESOLUTION = PAGE_SIZE / 8;
     const size_t SMALL_MAX = 256 * SMALL_RESOLUTION;
-    const size_t SMALL_SIZE = 512 * PAGE_SIZE;
+    const size_t SMALL_SIZE = 64 * PAGE_SIZE;
 
     const size_t LARGE_RESOLUTION = PAGE_SIZE;
 
@@ -111,19 +117,19 @@ void check_head_free(MemoryNode *block)
     if (blocks.tiny_head == block)
     {
         munmap(block->loc, block->size);
-        munmap(block, sizeof(MemoryNode));
+        return_node_to_pool(blocks.node_pool, block);
         blocks.tiny_head = NULL;
     }
     else if (blocks.small_head == block)
     {
         munmap(block->loc, block->size);
-        munmap(block, sizeof(MemoryNode));
+        return_node_to_pool(blocks.node_pool, block);
         blocks.small_head = NULL;
     }
     else if (blocks.large_head == block)
     {
         munmap(block->loc, block->size);
-        munmap(block, sizeof(MemoryNode));
+        return_node_to_pool(blocks.node_pool, block);
         blocks.large_head = NULL;
     }
 }
@@ -139,9 +145,7 @@ int free_block(MemoryNode *block)
         temp = block->next;
         block->size += block->next->size;
         block->next = block->next->next;
-        rtn = munmap(temp, sizeof(MemoryNode));
-        if (rtn < 0)
-            return -1;
+        return_node_to_pool(blocks.node_pool, temp);
     }
     if ((block->prev != NULL) && (block->prev->is_free == 1))
     {
@@ -151,9 +155,7 @@ int free_block(MemoryNode *block)
             block->next->prev = block->prev;
         temp = block;
         block = block->prev;
-        rtn = munmap(temp, sizeof(MemoryNode));
-        if (rtn < 0)
-            return -1;
+        return_node_to_pool(blocks.node_pool, temp);
     }
     if (block->prev == NULL && block->next == NULL)
         check_head_free(block);

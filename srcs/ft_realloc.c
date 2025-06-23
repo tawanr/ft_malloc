@@ -6,7 +6,7 @@
 /*   By: tratanat <tawan.rtn@gmail.com>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/01 14:14:15 by tratanat          #+#    #+#             */
-/*   Updated: 2025/06/21 19:13:08 by tratanat         ###   ########.fr       */
+/*   Updated: 2025/06/23 14:05:43 by tratanat         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,11 @@
 void *realloc(void *ptr, size_t size)
 {
     pthread_mutex_lock(&lock);
-    // If ptr is NULL, should behave the same as malloc
+    if (ptr == NULL)
+    {
+        pthread_mutex_unlock(&lock);
+        return malloc(size);
+    }
     MemoryNode *block = get_block(ptr);
     if (block == NULL)
     {
@@ -33,13 +37,10 @@ void *realloc(void *ptr, size_t size)
             pthread_mutex_unlock(&lock);
             return NULL;
         }
-        // Fix this
         size_t new_size = block->size;
         if (size < new_size)
             new_size = size;
-        for (size_t i = 0; i < new_size; i++)
-            *(char *)(allocated->loc + i) = *(char *)(block->loc + i);
-        // ft_strlcpy(allocated->loc, block->loc, size);
+        ft_memcpy(allocated->loc, block->loc, new_size);
     }
     free_block(block);
     pthread_mutex_unlock(&lock);

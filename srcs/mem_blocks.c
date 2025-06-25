@@ -6,7 +6,7 @@
 /*   By: tratanat <tawan.rtn@gmail.com>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/01 13:53:31 by tratanat          #+#    #+#             */
-/*   Updated: 2025/06/21 22:53:38 by tratanat         ###   ########.fr       */
+/*   Updated: 2025/06/25 18:02:40 by tratanat         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,19 +114,7 @@ MemoryNode *get_block(void *loc)
 
 void check_head_free(MemoryNode *block)
 {
-    if (blocks.tiny_head == block)
-    {
-        munmap(block->loc, block->size);
-        return_node_to_pool(blocks.node_pool, block);
-        blocks.tiny_head = NULL;
-    }
-    else if (blocks.small_head == block)
-    {
-        munmap(block->loc, block->size);
-        return_node_to_pool(blocks.node_pool, block);
-        blocks.small_head = NULL;
-    }
-    else if (blocks.large_head == block)
+    if (blocks.large_head == block)
     {
         munmap(block->loc, block->size);
         return_node_to_pool(blocks.node_pool, block);
